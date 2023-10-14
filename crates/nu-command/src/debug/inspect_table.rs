@@ -10,49 +10,48 @@ use crate::debug::inspect_table::{
     global_horizontal_char::SetHorizontalChar, set_widths::SetWidths,
 };
 
-pub fn build_table(value: Value, description: String, termsize: usize) -> String {
+pub fn build_table(value: Value, mut data_type: String, termsize: usize) -> String {
     let (head, mut data) = util::collect_input(value);
     let count_columns = head.len();
     data.insert(0, head);
 
-    let mut desc = description;
-    let mut desc_width = string_width(&desc);
-    let mut desc_table_width = get_total_width_2_column_table(11, desc_width);
+    let mut type_width = string_width(&data_type);
+    let mut type_table_width = get_total_width_2_column_table(4, type_width);
 
     let cfg = Table::default().with(Style::modern()).get_config().clone();
     let mut widths = get_data_widths(&data, count_columns);
     truncate_data(&mut data, &mut widths, &cfg, termsize);
 
     let val_table_width = get_total_width2(&widths, &cfg);
-    if val_table_width < desc_table_width {
-        increase_widths(&mut widths, desc_table_width - val_table_width);
+    if val_table_width < type_table_width {
+        increase_widths(&mut widths, type_table_width - val_table_width);
         increase_data_width(&mut data, &widths);
     }
 
-    if val_table_width > desc_table_width {
-        desc_width += val_table_width - desc_table_width;
-        increase_string_width(&mut desc, desc_width);
+    if val_table_width > type_table_width {
+        type_width += val_table_width - type_table_width;
+        increase_string_width(&mut data_type, type_width);
     }
 
-    if desc_table_width > termsize {
-        let delete_width = desc_table_width - termsize;
-        if delete_width >= desc_width {
-            // we can't fit in a description; we consider it's no point in showing then?
+    if type_table_width > termsize {
+        let delete_width = type_table_width - termsize;
+        if delete_width >= type_width {
+            // we can't fit in a data type; we consider it's no point in showing then?
             return String::new();
         }
 
-        desc_width -= delete_width;
-        desc = string_wrap(&desc, desc_width, false);
-        desc_table_width = termsize;
+        type_width -= delete_width;
+        data_type = string_wrap(&data_type, type_width, false);
+        type_table_width = termsize;
     }
 
     add_padding_to_widths(&mut widths);
 
     #[allow(clippy::manual_clamp)]
-    let width = val_table_width.max(desc_table_width).min(termsize);
+    let width = val_table_width.max(type_table_width).min(termsize);
 
-    let mut desc_table = Table::from_iter([[String::from("description"), desc]]);
-    desc_table.with(Style::rounded().remove_bottom().remove_horizontals());
+    let mut type_table = Table::from_iter([[String::from("type"), data_type]]);
+    type_table.with(Style::rounded().remove_bottom().remove_horizontals());
 
     let mut val_table = Table::from_iter(data);
     val_table.with(
@@ -60,10 +59,10 @@ pub fn build_table(value: Value, description: String, termsize: usize) -> String
             .with(Style::rounded().corner_top_left('├').corner_top_right('┤'))
             .with(SetWidths(widths))
             .with(Wrap::new(width).priority::<PriorityMax>())
-            .with(SetHorizontalChar::new('┼', '┴', 11 + 2 + 1)),
+            .with(SetHorizontalChar::new('┼', '┴', 4 + 2 + 1)),
     );
 
-    format!("{desc_table}\n{val_table}")
+    format!("{type_table}\n{val_table}")
 }
 
 fn get_data_widths(data: &[Vec<String>], count_columns: usize) -> Vec<usize> {

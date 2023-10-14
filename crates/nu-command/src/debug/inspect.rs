@@ -40,7 +40,7 @@ impl Command for Inspect {
             });
         }
         let original_input = input_val.clone();
-        let description = match input_val {
+        let data_type = match input_val {
             Value::CustomValue { ref val, .. } => val.value_string(),
             _ => input_val.get_type().to_string(),
         };
@@ -50,7 +50,7 @@ impl Command for Inspect {
             None => (Width(0), Height(0)),
         };
 
-        let table = inspect_table::build_table(input_val, description, cols.0 as usize);
+        let table = inspect_table::build_table(input_val, data_type, cols.0 as usize);
 
         // Note that this is printed to stderr. The reason for this is so it doesn't disrupt the regular nushell
         // tabular output. If we printed to stdout, nushell would get confused with two outputs.
